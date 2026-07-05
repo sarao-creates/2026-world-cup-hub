@@ -32,9 +32,18 @@
     openMatchId: null,
     summaryCache: new Map(),
     timer: null,
+    fingerprint: null,
   };
 
   const $ = (sel) => document.querySelector(sel);
+
+  // ESPN serves original assets (500px logos ~27KB, 720p posters ~185KB); the
+  // combiner endpoint resizes on their CDN — logos drop to <1KB.
+  function espnImg(url, w, square) {
+    const m = /^https?:\/\/a\.espncdn\.com(\/.+)$/.exec(url || "");
+    if (!m || m[1].startsWith("/combiner")) return url;
+    return `https://a.espncdn.com/combiner/i?img=${encodeURIComponent(m[1])}&w=${w}${square ? `&h=${w}` : ""}`;
+  }
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   const fmtTime = new Intl.DateTimeFormat([], { hour: "numeric", minute: "2-digit" });
@@ -169,7 +178,7 @@
       m.state === "in" ? "playing" : "",
     ].filter(Boolean).join(" ");
     const logo = side.logo && !side.placeholder
-      ? `<img src="${esc(side.logo)}" alt="" loading="lazy">`
+      ? `<img src="${esc(espnImg(side.logo, 48, true))}" alt="" loading="lazy">`
       : `<span class="flag-ph">·</span>`;
     const label = side.placeholder ? shortPlaceholder(side.name) : side.name;
     const so = side.shootout != null ? ` <span class="so">(${esc(side.shootout)})</span>` : "";
@@ -217,6 +226,8 @@
 
   function renderBracket() {
     const el = $("#bracket");
+    const scroller = el.closest(".bracket-scroll");
+    const scrollLeft = scroller ? scroller.scrollLeft : 0;
     const final = roundMatches("final")[0];
     const third = roundMatches("3rd-place-match")[0];
 
@@ -224,6 +235,7 @@
       el.innerHTML = ROUNDS.map((slug) =>
         columnHTML(ROUND_LABELS[slug], roundMatches(slug), "col-left", { linked: false })
       ).join("");
+      if (scroller) scroller.scrollLeft = scrollLeft;
       return;
     }
 
@@ -251,6 +263,7 @@
       html.push(columnHTML(labelFor(lvl) || ["Semifinals", "Quarterfinals", "Round of 16", "Round of 32"][i], lvl, "col-right", { fed: i < rightCols.length - 1 }));
     });
     el.innerHTML = html.join("");
+    if (scroller) scroller.scrollLeft = scrollLeft;
 
     const banner = $("#champion-banner");
     if (final.completed) {
@@ -293,7 +306,7 @@
       const rows = entries.map((en) => {
         const t = en.team;
         const dot = en.note ? `<span class="qual-dot" style="background:${esc(en.note.color || "#22c55e")}" title="${esc(en.note.description || "")}"></span>` : `<span class="qual-dot" style="background:transparent"></span>`;
-        const logo = t.logos && t.logos[0] ? `<img src="${esc(t.logos[0].href)}" alt="" loading="lazy">` : "";
+        const logo = t.logos && t.logos[0] ? `<img src="${esc(espnImg(t.logos[0].href, 48, true))}" alt="" loading="lazy">` : "";
         return `<tr>
           <td class="team-cell">${dot}${logo}<span>${esc(t.displayName)}</span></td>
           <td>${statVal(en, "gamesPlayed")}</td><td>${statVal(en, "wins")}</td>
@@ -309,7 +322,7 @@
         if (m.state === "in") mid = `<span class="f-score">${esc(m.home.score)}–${esc(m.away.score)}</span> <span class="f-live">${esc(m.clock)}</span>`;
         else if (m.state === "post") mid = `<span class="f-score">${esc(m.home.score)}–${esc(m.away.score)}</span>`;
         else mid = `<span class="f-score upcoming">${fmtTime.format(m.date)}</span>`;
-        const img = (s) => s.logo ? `<img src="${esc(s.logo)}" alt="">` : "";
+        const img = (s) => s.logo ? `<img src="${esc(espnImg(s.logo, 48, true))}" alt="">` : "";
         return `<button class="fixture-row" data-match="${esc(m.id)}">
           <span class="f-date">${fmtDayShort.format(m.date)}</span>
           <span class="f-team right">${`<span>${esc(m.home.abbr)}</span>`}${img(m.home)}</span>
@@ -333,7 +346,7 @@
 
   function modalHeaderHTML(m) {
     const teamCol = (s) => `<div class="mh-team">
-      ${s.logo && !s.placeholder ? `<img src="${esc(s.logo)}" alt="">` : `<div style="font-size:40px">⚽</div>`}
+      ${s.logo && !s.placeholder ? `<img src="${esc(espnImg(s.logo, 120, true))}" alt="">` : `<div style="font-size:40px">⚽</div>`}
       <div class="name">${esc(s.name)}</div>
     </div>`;
     let middle;
@@ -393,7 +406,7 @@
     const cards = vids.map((v) => {
       const src = v.links?.source?.HD?.href || v.links?.source?.href;
       return `<div class="video-card">
-        <video controls preload="none" poster="${esc(v.thumbnail || "")}" playsinline>
+        <video controls preload="none" poster="${esc(espnImg(v.thumbnail, 480) || "")}" playsinline>
           <source src="${esc(src)}" type="video/mp4">
         </video>
         <div class="v-title">${esc(v.headline)}</div>
@@ -505,7 +518,14 @@
     try {
       await Promise.all([fetchScoreboard(), state.tab === "groups" || !state.standings ? fetchStandings() : Promise.resolve()]);
       $("#error-banner").hidden = true;
-      renderCurrentTab();
+      // skip the DOM rebuild when no score/clock/status changed since last poll
+      const fp = state.matches.map((m) => `${m.id}:${m.state}:${m.clock}:${m.home.score}-${m.away.score}`).join("|");
+      if (fp !== state.fingerprint || userTriggered) {
+        state.fingerprint = fp;
+        renderCurrentTab();
+      } else {
+        $("#last-updated").textContent = `Updated ${fmtTime.format(new Date())}`;
+      }
       // live modal follows along
       if (state.openMatchId) {
         const m = state.byId.get(state.openMatchId);

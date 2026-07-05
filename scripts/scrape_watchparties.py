@@ -7,6 +7,7 @@ Usage: python3 scripts/scrape_watchparties.py
 """
 import json
 import re
+import sys
 import time
 import urllib.request
 from datetime import date
@@ -129,6 +130,13 @@ def main():
         (e for e in all_events.values()
          if e["startDate"] >= today or e["endDate"] >= today),
         key=lambda e: (e["startDate"], e["name"] or ""))
+
+    if not events:
+        # Eventbrite blocks some IPs (e.g. CI runners). Never replace good
+        # data with an empty scrape — fail loudly instead.
+        print("Scrape produced 0 events; keeping existing data/watchparties.json",
+              file=sys.stderr)
+        sys.exit(1)
 
     by_borough = {}
     for e in events:
