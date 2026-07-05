@@ -1,0 +1,10 @@
+{
+  "name": "world-cup-hub",
+  "version": "1.0.0",
+  "description": "World Cup 2026 live bracket, groups, highlights, and NYC watch parties",
+  "type": "module",
+  "scripts": {
+    "scrape": "python3 scripts/scrape_watchparties.py",
+    "serve": "python3 -m http.server 8642"
+  }
+}

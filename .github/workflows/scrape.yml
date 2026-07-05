@@ -1,0 +1,23 @@
+name: Refresh NYC watch parties
+
+on:
+  schedule:
+    - cron: "0 6,14,20 * * *" # 3x daily during the tournament
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/scrape_watchparties.py
+      - name: Commit updated data
+        run: |
+          git config user.name "watch-party-bot"
+          git config user.email "actions@github.com"
+          git add data/watchparties.json
+          git diff --cached --quiet || git commit -m "Refresh watch party data"
+          git push

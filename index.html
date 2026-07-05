@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0e1a">
+  <title>World Cup 2026 Hub</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-ball">⚽</span>
+        <div>
+          <h1>World Cup 2026</h1>
+          <p class="subtitle">USA · Mexico · Canada</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <span id="live-badge" class="live-badge" hidden><span class="live-dot"></span>LIVE</span>
+        <span id="last-updated" class="last-updated"></span>
+        <button id="refresh-btn" class="refresh-btn" title="Refresh now" aria-label="Refresh now">↻</button>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" role="tab" data-tab="bracket" aria-selected="true">Bracket</button>
+      <button class="tab" role="tab" data-tab="groups" aria-selected="false">Group Stage</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="error-banner" class="error-banner" hidden></div>
+
+    <section id="view-bracket" class="view" role="tabpanel">
+      <div id="champion-banner" class="champion-banner" hidden></div>
+      <div class="bracket-scroll">
+        <div id="bracket" class="bracket">
+          <div class="loading">Loading bracket…</div>
+        </div>
+      </div>
+      <p class="hint">Tap any match for details — scores, scorers &amp; highlights for finished games, NYC watch parties for upcoming ones. Scroll sideways to see the full bracket.</p>
+    </section>
+
+    <section id="view-groups" class="view" role="tabpanel" hidden>
+      <div id="groups" class="groups-grid">
+        <div class="loading">Loading groups…</div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <button id="modal-close" class="modal-close" aria-label="Close">✕</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <p>Live data from ESPN public APIs · Watch parties scraped from Eventbrite · Unofficial fan project</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
