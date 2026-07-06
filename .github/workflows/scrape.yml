@@ -1,8 +1,10 @@
 name: Refresh NYC watch parties
 
+# NOTE: no cron schedule — Eventbrite blocks GitHub-hosted runner IPs (HTTP 405
+# on every attempt), so scheduled runs only ever produce failure emails.
+# Refresh locally instead: `npm run scrape` + push. Manual dispatch kept for
+# retrying from CI if Eventbrite ever unblocks.
 on:
-  schedule:
-    - cron: "0 6,14,20 * * *" # 3x daily during the tournament
   workflow_dispatch:
 
 permissions:
@@ -12,7 +14,7 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: python3 scripts/scrape_watchparties.py
       - name: Commit updated data
         run: |

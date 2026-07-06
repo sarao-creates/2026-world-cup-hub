@@ -34,8 +34,9 @@ npm run serve    # serve at http://localhost:8642 (any static server works)
 2. Settings → Pages → Deploy from branch → `main` / root.
 3. Done — the site fetches live data client-side, so scores/bracket/highlights
    stay current with zero rebuilds.
-4. The included workflow (`.github/workflows/scrape.yml`) re-scrapes watch
-   parties 3× daily and commits the fresh JSON automatically.
+4. Watch parties: Eventbrite blocks GitHub-hosted runners, so refresh locally
+   with `npm run scrape` and push. (`.github/workflows/scrape.yml` can be
+   dispatched manually to retry from CI; it fails safely if blocked.)
 
 ## Data sources
 
